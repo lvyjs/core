@@ -142,15 +142,19 @@ export default defineConfig({
   build: {
     input: 'src', // 输入目录，默认 src
     dir: 'lib', // 输出目录，默认 lib
+    bundleDeps: false, // 是否把依赖打包进产物，默认 false（Node.js 库默认不打包）
     // tsdown 专属配置（可选），在默认映射之上覆盖
     tsdown: {
-      minify: false
+      minify: false,
+      dts: true // 需要生成 .d.ts 声明文件时开启（默认 false）
     }
   }
 })
 ```
 
-- 输出到 `lib` 目录，保持源码目录结构（`unbundle` 模式），并生成 `.d.ts` 声明文件
+- 输出到 `lib` 目录，保持源码目录结构（`unbundle` 模式）
+- 默认**不**打包依赖：产物保留 `import ... from 'pkg'`，交由运行时解析；需要把依赖打进产物（如前端类应用）时设置 `build.bundleDeps: true`
+- 默认**不**生成 `.d.ts` 声明文件（应用项目兼容性考虑），需要时设置 `build.tsdown.dts: true`
 - CJS/JSON 由 Rolldown 内置处理，无需额外插件
 - 样式/静态资源使用 lvyjs 自研插件，与开发模式共用同一套编译管线
 - 别名由 tsdown 内置 `alias` 处理，产物中的导入会改写为相对路径
@@ -206,7 +210,9 @@ yarn add less sass -D
 ```scss
 @import url('@src/assets/test3.scss');
 @import url('./test3.scss');
+@import './test3.scss';
 @use './test3.scss';
+@use '@src/assets/test3.scss'; // 别名导入，编译阶段直接支持
 ```
 
 **LESS**
@@ -215,9 +221,11 @@ yarn add less sass -D
 @import './test1.css';
 ```
 
+预处理器文件之间的导入同样会被正确编译：`@import url('./test3.scss')` 这类写法会先经 Sass/Less 编译再内联，不会把原始源码混进产物；别名导入在编译阶段直接支持（SCSS：`@import '@src/xxx.scss'` / `@use '@src/xxx.scss'`，LESS：`@import '@src/xxx.less'`）。
+
 ## PostCSS
 
-通过 `postcss.config.cjs` 配置 PostCSS 插件。内置支持 `postcss-import`、`postcss-url`、`autoprefixer`。
+通过 `postcss.config.cjs` 配置 PostCSS 插件。配置了 `alias` 时自动启用 `postcss-import`（解析 `@import` 的别名与相对路径）与 `postcss-url`（改写 `url()` 中的别名），并始终内置 `autoprefixer`。
 
 ### 压缩
 

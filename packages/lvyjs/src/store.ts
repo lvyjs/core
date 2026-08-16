@@ -72,6 +72,12 @@ export type Options = {
          */
         dir?: string
         /**
+         * 是否把依赖打包进产物，默认 false。
+         * Node.js 库默认不打包依赖（产物保留 `import ... from 'pkg'`），
+         * 前端类应用可设为 true。
+         */
+        bundleDeps?: boolean
+        /**
          * tsdown 专属配置，在默认映射之上透传覆盖
          */
         tsdown?: Record<string, any> | false

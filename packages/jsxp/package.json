@@ -30,7 +30,7 @@
     "@types/koa-static": "^4.0.4",
     "lvyjs": "^0.3.0-alpha.2",
     "tsdown": "^0.22.14",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "tsx": "^4.23.12"
   },
   "exports": {

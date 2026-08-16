@@ -1,5 +1,65 @@
 import { convertPath } from '../config'
-import { lvyAssets, lvyStylesCSSImport } from './plugins/index'
+import { lvyAssets, lvyStylesCSSImport, lvyExternal } from './plugins/index'
+import { globalLogger, type Logger } from 'tsdown'
+
+const LogLevels = { silent: 0, error: 1, warn: 2, info: 3 } as const
+
+/**
+ * 包装 tsdown 的 logger，隐藏 `entry: ...` 这行日志。
+ * tsdown 没有提供单独关闭 entry 打印的选项，只能通过 customLogger 注入。
+ * 其余日志行为与 tsdown 默认保持一致，logLevel / failOnWarn / suppressWarnings 照常生效。
+ */
+const createFilteredLogger = (tsdownCfg: Record<string, any>): Logger => {
+  const level = tsdownCfg?.logLevel ?? 'info'
+  const levelValue = LogLevels[level] ?? LogLevels.info
+  const options = {
+    ...globalLogger.options,
+    failOnWarn: tsdownCfg?.failOnWarn ?? false,
+    suppressWarnings: tsdownCfg?.suppressWarnings
+  }
+  const isSuppressed = (message: string): boolean => {
+    const patterns = options.suppressWarnings
+    if (typeof patterns === 'function') return patterns(message)
+    const list = Array.isArray(patterns) ? patterns : patterns ? [patterns] : []
+    return list.some(pattern =>
+      pattern instanceof RegExp ? pattern.test(message) : message.includes(pattern)
+    )
+  }
+  return {
+    ...globalLogger,
+    level: level in LogLevels ? level : 'info',
+    options,
+    info(...args: any[]) {
+      if (levelValue < LogLevels.info) return
+      const message = args.filter(arg => arg !== undefined && arg !== false).join(' ')
+      // 隐藏 tsdown 的 entry 列表打印
+      if (message.includes('entry:')) return
+      globalLogger.info(...args)
+    },
+    success(...args: any[]) {
+      if (levelValue < LogLevels.info) return
+      globalLogger.success(...args)
+    },
+    warn(...args: any[]) {
+      const message = args.filter(arg => arg !== undefined && arg !== false).join(' ')
+      if (isSuppressed(message)) return
+      if (options.failOnWarn) return this.error(...args)
+      globalLogger.warn(...args)
+    },
+    warnOnce(...args: any[]) {
+      const message = args.filter(arg => arg !== undefined && arg !== false).join(' ')
+      if (isSuppressed(message)) return
+      if (options.failOnWarn) return this.error(...args)
+      globalLogger.warnOnce(...args)
+    },
+    error(...args: any[]) {
+      globalLogger.error(...args)
+    },
+    clearScreen(type: 'error' | 'warn' | 'info') {
+      globalLogger.clearScreen(type)
+    }
+  }
+}
 
 /**
  * 打包 JS（tsdown 引擎，基于 Rolldown）
@@ -65,6 +125,25 @@ export async function buildWithTsdown() {
   // 用户自定义插件与内置共享插件合并，避免覆盖导致样式/资源处理失效
   const userPlugins = Array.isArray(tsdownCfg.plugins) ? tsdownCfg.plugins : []
   const finalPlugins = [...plugins, ...userPlugins]
+  // Node.js 库默认不打包依赖：把未被别名/资源/样式插件处理的裸包导入外部化。
+  // 使用 build.bundleDeps: true 关闭（例如前端类应用需要把依赖打进去）。
+  if (buildCfg['bundleDeps'] !== true) {
+    const aliasFinds: string[] = []
+    if (typeof global.lvyConfig?.alias !== 'boolean') {
+      const entries = global.lvyConfig?.alias?.entries
+      if (Array.isArray(entries)) {
+        for (const { find } of entries) {
+          aliasFinds.push(find)
+        }
+      }
+    }
+    finalPlugins.push(
+      lvyExternal({
+        aliasFinds,
+        alwaysBundle: tsdownCfg.deps?.alwaysBundle
+      })
+    )
+  }
   const restCfg = { ...tsdownCfg }
   delete restCfg.plugins
 
@@ -76,7 +155,10 @@ export async function buildWithTsdown() {
     platform: 'node',
     fixedExtension: false,
     root: inputDir,
-    dts: true,
+    // 默认不生成 .d.ts 声明文件：应用项目通常不需要声明文件，
+    // 且 rolldown-plugin-dts 对推断类型引用 node_modules 内部类型会报错。
+    // 需要声明文件时通过 build.tsdown.dts: true 开启。
+    dts: false,
     // 构建前清理输出目录，避免旧产物与本次构建混用（可用 tsdown: { clean: false } 关闭）
     clean: true,
     report: true,
@@ -88,6 +170,7 @@ export async function buildWithTsdown() {
     outputOptions: {
       assetFileNames: 'assets/[name]-[hash][extname]'
     },
+    customLogger: createFilteredLogger(restCfg),
     plugins: finalPlugins,
     ...restCfg
   })

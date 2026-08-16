@@ -2,6 +2,7 @@ import fs from 'fs'
 import postcss from 'postcss'
 import { createRequire } from 'module'
 import { join, dirname, resolve, isAbsolute } from 'path'
+import { pathToFileURL } from 'url'
 import { convertPath, createAlias } from './config'
 
 const require = createRequire(import.meta.url)
@@ -51,6 +52,58 @@ export default function LessAliasPlugin(aliases: AliasConfig) {
 }
 
 /**
+ * Sass 别名 importer：
+ * 让 `@import '@src/xxx.scss'` / `@use '@src/xxx.scss'` 在 Sass 编译阶段
+ * 就能解析别名（Sass 默认不认 lvyjs 的 alias 配置）。
+ * findFileUrl 返回 file:// URL 后，Sass 会自行从文件系统加载。
+ */
+const createSassAliasImporter = () => {
+  return {
+    findFileUrl(url: string) {
+      const alias = global.lvyConfig?.alias
+      if (typeof alias === 'boolean' || !Array.isArray(alias?.entries)) {
+        return null
+      }
+      for (const { find, replacement } of alias.entries) {
+        if (url.startsWith(find)) {
+          return pathToFileURL(url.replace(find, replacement))
+        }
+      }
+      return null
+    }
+  }
+}
+
+/**
+ * 只做预处理器编译（less/sass/scss），不做 PostCSS。
+ * 供 compileCSS 与 postcss-import 的 load 钩子共用：
+ * 内联 .scss/.less/.sass 时先编译，避免原始源码混进产物。
+ */
+const compilePreprocessor = async (inputPath: string): Promise<string> => {
+  const typing = /\.sass$/.test(inputPath)
+    ? 'sass'
+    : /\.less$/.test(inputPath)
+      ? 'less'
+      : /\.scss$/.test(inputPath)
+        ? 'scss'
+        : 'css'
+  if (typing === 'less') {
+    const less = require('less')
+    const lessResult = await less.render(fs.readFileSync(inputPath, 'utf-8'), {
+      filename: inputPath,
+      plugins: [LessAliasPlugin(createAlias(global.lvyConfig?.alias))] // 使用插件
+    })
+    return lessResult.css
+  }
+  if (typing === 'sass' || typing === 'scss') {
+    const sass = require('sass')
+    // 使用现代 API，避免 legacy-js-api 弃用告警；importers 支持别名解析
+    return sass.compile(inputPath, { importers: [createSassAliasImporter()] }).css
+  }
+  return fs.readFileSync(inputPath, 'utf-8')
+}
+
+/**
  *
  * @param configPath
  * @param typing
@@ -85,6 +138,10 @@ const loadPostcssConfig = (configPath: string, typing: string) => {
               }
             }
             return id // 默认返回原始路径
+          },
+          load: async (filename: string) => {
+            // 预处理器文件内联前先编译，避免原始 scss/less 文本进入产物
+            return compilePreprocessor(filename)
           }
         })
       )
@@ -174,21 +231,7 @@ export const compileCSS = async (inputPath: string): Promise<CSSCompileResult> =
   const postcssConfig = loadPostcssConfig(configPath, typing)
   if (!postcssConfig) return { css: '', dependencies: [] }
 
-  let css = ''
-  if (typing === 'less') {
-    const less = require('less')
-    const lessResult = await less.render(fs.readFileSync(inputPath, 'utf-8'), {
-      filename: inputPath,
-      plugins: [LessAliasPlugin(createAlias(global.lvyConfig?.alias))] // 使用插件
-    })
-    css = lessResult.css
-  } else if (typing === 'sass' || typing === 'scss') {
-    const sass = require('sass')
-    // 使用现代 API，避免 legacy-js-api 弃用告警
-    css = sass.compile(inputPath).css
-  } else {
-    css = fs.readFileSync(inputPath, 'utf-8')
-  }
+  const css = await compilePreprocessor(inputPath)
   const result = await postcss(postcssConfig.plugins).process(css, {
     parser: parser,
     from: inputPath,
