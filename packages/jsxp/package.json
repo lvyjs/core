@@ -6,7 +6,7 @@
   "main": "./lib/index.js",
   "type": "module",
   "scripts": {
-    "build": "node bundle.js"
+    "build": "tsdown"
   },
   "dependencies": {
     "@types/react": "^19.2.14",
@@ -23,17 +23,15 @@
   },
   "types": "lib",
   "devDependencies": {
-    "@rollup/plugin-typescript": "^12.3.0",
     "@types/koa": "^3.0.2",
     "@types/koa-mount": "^4.0.5",
     "@types/koa-router": "^7.4.9",
     "@types/koa-send": "^4.1.6",
     "@types/koa-static": "^4.0.4",
     "lvyjs": "^0.3.0-alpha.2",
-    "rollup": "^4.60.2",
-    "rollup-plugin-dts": "^6.4.1",
+    "tsdown": "^0.22.14",
     "typescript": "^6.0.3",
-    "tsx": "^4.21.0"
+    "tsx": "^4.23.12"
   },
   "exports": {
     ".": {

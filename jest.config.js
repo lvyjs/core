@@ -12,7 +12,7 @@ export default {
       {
         tsconfig: {
           baseUrl: '.',
-          ignoreDeprecations: '5.0',
+          ignoreDeprecations: '6.0',
           paths: {
             '@src/*': ['src/*']
           }

@@ -34,7 +34,7 @@ const main = async () => {
 
       // 序列化配置（处理正则等特殊类型）
       const serializedConfig = JSON.parse(
-        JSON.stringify(lvyConfig, (key, value) => {
+        JSON.stringify(lvyConfig, (_key, value) => {
           if (value instanceof RegExp) {
             return { __regexp: true, source: value.source, flags: value.flags }
           }

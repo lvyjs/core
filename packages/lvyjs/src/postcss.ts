@@ -146,13 +146,18 @@ const loadPostcssConfig = (configPath: string, typing: string) => {
   }
 }
 
+export type CSSCompileResult = {
+  css: string
+  dependencies: string[]
+}
+
 /**
+ * 编译单个样式文件，返回编译后的 CSS 内容与依赖文件列表
+ * 开发模式（postCSS）与打包模式（tsdown 样式插件）共用
  *
- * @param inputPath
- * @param outputPath
- * @returns
+ * @param inputPath 样式文件绝对路径
  */
-const postCSS = (inputPath: string, outputPath: string) => {
+export const compileCSS = async (inputPath: string): Promise<CSSCompileResult> => {
   const configPath = join(process.cwd(), 'postcss.config.cjs')
 
   let typing: string = 'css'
@@ -167,39 +172,51 @@ const postCSS = (inputPath: string, outputPath: string) => {
   }
 
   const postcssConfig = loadPostcssConfig(configPath, typing)
-  if (!postcssConfig) return
+  if (!postcssConfig) return { css: '', dependencies: [] }
 
-  const readAndProcessCSS = async () => {
-    let css = ''
-    if (typing === 'less') {
-      const less = require('less')
-      const lessResult = await less.render(fs.readFileSync(inputPath, 'utf-8'), {
-        filename: inputPath,
-        plugins: [LessAliasPlugin(createAlias(global.lvyConfig?.alias))] // 使用插件
-      })
-      css = lessResult.css
-    } else if (typing === 'sass' || typing === 'scss') {
-      const sass = require('sass')
-      const sassResult = sass.renderSync({ file: inputPath })
-      css = sassResult.css.toString()
-    } else {
-      css = fs.readFileSync(inputPath, 'utf-8')
-    }
-    fs.mkdirSync(dirname(outputPath), { recursive: true })
-    const result = await postcss(postcssConfig.plugins).process(css, {
-      parser: parser,
-      from: inputPath,
-      to: outputPath
+  let css = ''
+  if (typing === 'less') {
+    const less = require('less')
+    const lessResult = await less.render(fs.readFileSync(inputPath, 'utf-8'), {
+      filename: inputPath,
+      plugins: [LessAliasPlugin(createAlias(global.lvyConfig?.alias))] // 使用插件
     })
-    fs.writeFileSync(outputPath, result.css)
-    if (result.warnings().length) {
-      result.warnings().forEach(warn => {
-        console.warn(warn.toString())
-      })
-    }
-    const dependencies = result.messages
-      .filter(msg => msg.type === 'dependency')
-      .map(msg => msg.file)
+    css = lessResult.css
+  } else if (typing === 'sass' || typing === 'scss') {
+    const sass = require('sass')
+    // 使用现代 API，避免 legacy-js-api 弃用告警
+    css = sass.compile(inputPath).css
+  } else {
+    css = fs.readFileSync(inputPath, 'utf-8')
+  }
+  const result = await postcss(postcssConfig.plugins).process(css, {
+    parser: parser,
+    from: inputPath,
+    to: inputPath
+  })
+  if (result.warnings().length) {
+    result.warnings().forEach(warn => {
+      console.warn(warn.toString())
+    })
+  }
+  const dependencies = result.messages.filter(msg => msg.type === 'dependency').map(msg => msg.file)
+  return {
+    css: result.css,
+    dependencies
+  }
+}
+
+/**
+ *
+ * @param inputPath
+ * @param outputPath
+ * @returns
+ */
+const postCSS = (inputPath: string, outputPath: string) => {
+  const readAndProcessCSS = async () => {
+    const { css, dependencies } = await compileCSS(inputPath)
+    fs.mkdirSync(dirname(outputPath), { recursive: true })
+    fs.writeFileSync(outputPath, css)
     for (const dep of dependencies) {
       fs.watch(dep, eventType => {
         if (eventType === 'change') {

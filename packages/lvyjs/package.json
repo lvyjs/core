@@ -7,26 +7,19 @@
   "type": "module",
   "main": "lib/index.js",
   "scripts": {
-    "build": "node bundle.js",
+    "build": "tsdown",
     "start": "node lib/index.js",
     "dev": "tsx src/index.ts",
     "dev:watch": "tsx watch src/index.ts"
   },
   "dependencies": {
-    "@rollup/plugin-alias": "^6.0.0",
-    "@rollup/plugin-commonjs": "^29.0.2",
-    "@rollup/plugin-json": "^6.1.0",
-    "@rollup/plugin-typescript": "^12.3.0",
-    "@rollup/pluginutils": "^5.1.3",
     "autoprefixer": "^10.4.20",
     "chokidar": "^5.0.0",
     "postcss": "^8.4.47",
     "postcss-import": "^16.1.0",
     "postcss-url": "^10.1.3",
-    "rollup": "^4.18.1",
-    "rollup-plugin-dts": "^6.1.1",
-    "rollup-plugin-styles": "^4.0.0",
-    "tsx": "^4.19.1",
+    "tsdown": "^0.22.14",
+    "tsx": "^4.23.12",
     "typescript": "^6.0.3"
   },
   "types": "lib",
@@ -67,7 +60,7 @@
     "ts",
     "tsx",
     "react",
-    "rullup",
+    "rolldown",
     "esbuild"
   ],
   "publishConfig": {
@@ -78,5 +71,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/lemonade-lab/lvyjs.git"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0"
   }
 }

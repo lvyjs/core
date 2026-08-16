@@ -1,6 +1,6 @@
 # LVY
 
-基于 tsx、rollup 构建的，为 Node.js 应用设计的开发与打包工具
+基于 tsx、tsdown 构建的，为 Node.js 应用设计的开发与打包工具
 
 | Project | Status                | Description |
 | ------- | --------------------- | ----------- |
@@ -135,27 +135,26 @@ export default defineConfig({
 
 ### build
 
-打包时的 Rollup 配置：
+打包配置（tsdown 引擎，基于 Rolldown，需要 Node.js 22.18+）：
 
 ```ts
 export default defineConfig({
   build: {
-    // CJS 文件处理，设为 false 禁用
-    commonjs: {},
-    // TypeScript 编译配置，设为 false 禁用
-    typescript: {},
-    // 自定义 Rollup 配置
-    RollupOptions: {
-      plugins: []
-    },
-    // 输出配置
-    OutputOptions: {
-      input: 'src', // 输入目录，默认 src
-      dir: 'lib' // 输出目录，默认 lib
+    input: 'src', // 输入目录，默认 src
+    dir: 'lib', // 输出目录，默认 lib
+    // tsdown 专属配置（可选），在默认映射之上覆盖
+    tsdown: {
+      minify: false
     }
   }
 })
 ```
+
+- 输出到 `lib` 目录，保持源码目录结构（`unbundle` 模式），并生成 `.d.ts` 声明文件
+- CJS/JSON 由 Rolldown 内置处理，无需额外插件
+- 样式/静态资源使用 lvyjs 自研插件，与开发模式共用同一套编译管线
+- 别名由 tsdown 内置 `alias` 处理，产物中的导入会改写为相对路径
+- `build.OutputOptions` 兼容旧配置：`input` / `dir` / `intro` / `outro` / `sourcemap`
 
 ## 静态资源
 

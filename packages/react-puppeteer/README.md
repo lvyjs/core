@@ -1,6 +1,6 @@
 # React-Puppeteer
 
-基于 tsx、esbuld、rollup 所构建的，为 nodejs 应用设计的打包工具
+基于 tsx、tsdown 所构建的，为 nodejs 应用设计的打包工具
 
 > 已废弃，请使用 jsxp 代替
 

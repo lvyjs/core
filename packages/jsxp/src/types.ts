@@ -74,8 +74,7 @@ export type ComponentCreateOptionsType =
  * 路由配置项：component 直接传 ReactNode，或 element + propsCall 动态渲染
  */
 export type RouteOption =
-  | { component: React.ReactNode; element?: never; propsCall?: never }
-  | RouteWithElement<any>
+  { component: React.ReactNode; element?: never; propsCall?: never } | RouteWithElement<any>
 
 export type RouteWithElement<P extends Record<string, any>> = {
   component?: never

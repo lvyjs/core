@@ -1,7 +1,7 @@
 {
   "name": "lvy",
   "version": "1.0.0",
-  "description": "一款为 node 构建设计的开发工具",
+  "description": "NodeJS JavaScript Run&Build",
   "author": "lemonade",
   "license": "MIT",
   "type": "module",
@@ -22,12 +22,13 @@
     "@types/node": "^25.6.0",
     "husky": "^9.0.11",
     "jest": "^30.3.0",
+    "lerna": "^10.0.0",
     "less": "^4.6.4",
     "prettier": "^3.8.3",
     "sass": "^1.99.0",
-    "tailwindcss": "^4.2.2",
+    "tailwindcss": "^3.4.17",
     "ts-jest": "^29.4.9",
-    "tsx": "^4.19.1"
+    "tsx": "^4.23.12"
   },
   "private": true,
   "workspaces": [

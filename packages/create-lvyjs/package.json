@@ -6,13 +6,14 @@
   "main": "bin/index.js",
   "type": "module",
   "scripts": {
-    "build": "node bundle.js"
+    "build": "tsdown"
   },
   "dependencies": {
     "enquirer": "^2.4.1"
   },
   "devDependencies": {
-    "@types/node": "^25.6.0"
+    "@types/node": "^25.6.0",
+    "tsdown": "^0.22.14"
   },
   "bin": {
     "create-lvyjs": "bin/index.js"

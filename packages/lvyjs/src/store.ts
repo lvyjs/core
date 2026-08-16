@@ -1,8 +1,5 @@
 import { existsSync } from 'fs'
 import { join } from 'path'
-import { RollupCommonJSOptions } from '@rollup/plugin-commonjs'
-import { RollupTypescriptOptions } from '@rollup/plugin-typescript'
-import { OutputOptions, RollupOptions } from 'rollup'
 import { Alias } from './typing'
 
 export type Options = {
@@ -67,25 +64,42 @@ export type Options = {
   build?:
     | {
         /**
-         * cjs文件处理
+         * 输入目录，默认 src
          */
-        commonjs?: RollupCommonJSOptions | false
+        input?: string
         /**
-         * ts配置
+         * 输出目录，默认 lib
          */
-        typescript?: RollupTypescriptOptions | false
+        dir?: string
         /**
-         *
+         * tsdown 专属配置，在默认映射之上透传覆盖
          */
-        RollupOptions?: RollupOptions
+        tsdown?: Record<string, any> | false
         /**
-         *
+         * 兼容旧配置：input/dir/intro/outro/sourcemap
+         * （旧版本配置的 OutputOptions 别名，仅保留 lvyjs 映射的字段）
          */
-        OutputOptions?: OutputOptions & {
+        OutputOptions?: {
           /**
            * 默认 src
            */
           input?: string
+          /**
+           * 默认 lib
+           */
+          dir?: string
+          /**
+           * 产物头部内容
+           */
+          intro?: string
+          /**
+           * 产物尾部内容
+           */
+          outro?: string
+          /**
+           * 是否生成 sourcemap，默认 false
+           */
+          sourcemap?: boolean
         }
       }
     | false
