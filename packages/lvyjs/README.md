@@ -143,10 +143,10 @@ export default defineConfig({
     input: 'src', // 输入目录，默认 src
     dir: 'lib', // 输出目录，默认 lib
     bundleDeps: false, // 是否把依赖打包进产物，默认 false（Node.js 库默认不打包）
+    dts: true, // 生成 .d.ts 声明文件（宽松模式，默认 false）
     // tsdown 专属配置（可选），在默认映射之上覆盖
     tsdown: {
-      minify: false,
-      dts: true // 需要生成 .d.ts 声明文件时开启（默认 false）
+      minify: false
     }
   }
 })
@@ -154,7 +154,7 @@ export default defineConfig({
 
 - 输出到 `lib` 目录，保持源码目录结构（`unbundle` 模式）
 - 默认**不**打包依赖：产物保留 `import ... from 'pkg'`，交由运行时解析；需要把依赖打进产物（如前端类应用）时设置 `build.bundleDeps: true`
-- 默认**不**生成 `.d.ts` 声明文件（应用项目兼容性考虑），需要时设置 `build.tsdown.dts: true`
+- 默认**不**生成 `.d.ts` 声明文件，需要时设置 `build.dts: true`（宽松模式：能生成的生成，诊断只作警告，无法生成的文件跳过并汇总提示，构建不失败；需要 tsdown 原生严格模式时用 `build.tsdown.dts`）
 - CJS/JSON 由 Rolldown 内置处理，无需额外插件
 - 样式/静态资源使用 lvyjs 自研插件，与开发模式共用同一套编译管线
 - 别名由 tsdown 内置 `alias` 处理，产物中的导入会改写为相对路径

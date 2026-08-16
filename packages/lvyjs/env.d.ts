@@ -48,7 +48,7 @@ declare module '*.ico' {
 }
 
 // lvyjs global config
-import type { Options } from './src/store'
-declare global {
-  var lvyConfig: Options
-}
+// 注意：这里不能使用顶层 import/export（否则文件变成模块，
+// TS7 在小程序里不会应用模块文件中的 ambient 通配声明，导致 *.css 等报 TS2307）。
+// 用 import() 类型查询保持文件为纯脚本。
+declare var lvyConfig: import('lvyjs').Options

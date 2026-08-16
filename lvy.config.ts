@@ -15,6 +15,7 @@ export default defineConfig({
       intro: `/**  https://lvyjs.dev script start **/`,
       outro: ` /**  https://lvyjs.dev script end  **/ `
     },
+    dts: true,
     tsdown: {}
   }
 })

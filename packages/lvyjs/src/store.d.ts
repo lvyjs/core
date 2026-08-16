@@ -1,7 +1,4 @@
-import { existsSync } from 'fs'
-import { join } from 'path'
 import { Alias } from './typing'
-
 export type Options = {
   env?: {
     [key: string]: string
@@ -117,47 +114,16 @@ export type Options = {
       }
     | false
 }
-
 /**
  *
  */
-export const initConfig = async () => {
-  if (!global.lvyConfig) global.lvyConfig = {}
-  const configFiles = [
-    'lvy.config.ts',
-    'lvy.config.js',
-    'lvy.config.mjs',
-    'lvy.config.cjs',
-    'lvy.config.tsx'
-  ]
-  let configDir = ''
-  for (const file of configFiles) {
-    if (existsSync(file)) {
-      configDir = file
-      break
-    }
-  }
-  if (configDir !== '') {
-    const v = await import(`file://${join(process.cwd(), configDir)}`)
-    if (v?.default) {
-      global.lvyConfig = v.default
-      if (global.lvyConfig?.env) {
-        for (const key in global.lvyConfig.env) {
-          process.env[key] = String(global.lvyConfig.env[key])
-        }
-      }
-      process.env.NODE_ENV = process.env?.NODE_ENV || 'development'
-    }
-  }
-}
-
+export declare const initConfig: () => Promise<void>
 /**
  * @returns
  */
-export const getOptions = () => global.lvyConfig
-
+export declare const getOptions: () => Options
 /**
  * @param param0
  * @returns
  */
-export const defineConfig = (options?: Options) => options
+export declare const defineConfig: (options?: Options) => Options | undefined

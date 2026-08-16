@@ -1,6 +1,7 @@
 import { convertPath } from '../config'
 import { lvyAssets, lvyStylesCSSImport, lvyExternal } from './plugins/index'
 import { globalLogger, type Logger } from 'tsdown'
+import { generateDtsLoose } from './dts'
 
 const LogLevels = { silent: 0, error: 1, warn: 2, info: 3 } as const
 
@@ -88,6 +89,8 @@ export async function buildWithTsdown() {
     typeof buildCfg === 'object' && buildCfg.tsdown && typeof buildCfg.tsdown === 'object'
       ? buildCfg.tsdown
       : ({} as Record<string, any>)
+  // 宽松 d.ts：由 lvyjs 自己生成，诊断只作警告，构建不因 d.ts 失败
+  const looseDts = buildCfg['dts'] === true || buildCfg['dts'] === 'loose'
 
   // 共享插件（assets/styles）
   // 注意：别名不能走插件解析 —— unbundle 模式下产物中的
@@ -146,6 +149,7 @@ export async function buildWithTsdown() {
   }
   const restCfg = { ...tsdownCfg }
   delete restCfg.plugins
+  if (looseDts) delete restCfg.dts
 
   await tsdown.build({
     entry: [entryGlob, `!${ignoreDts}`],
@@ -174,4 +178,17 @@ export async function buildWithTsdown() {
     plugins: finalPlugins,
     ...restCfg
   })
+
+  if (looseDts) {
+    const aliasEntries = Object.entries(aliasRecord).map(([find, replacement]) => ({
+      find,
+      replacement
+    }))
+    await generateDtsLoose({
+      cwd: process.cwd(),
+      inputDir,
+      outputDir,
+      aliasEntries
+    })
+  }
 }
